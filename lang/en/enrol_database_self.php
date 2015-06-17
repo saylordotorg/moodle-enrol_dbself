@@ -17,7 +17,7 @@
 /**
  * Strings for component 'enrol_database', language 'en'.
  *
- * @package   enrol_database
+ * @package   enrol_database_self
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

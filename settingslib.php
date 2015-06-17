@@ -17,7 +17,7 @@
 /**
  * Database enrolment plugin custom settings.
  *
- * @package    enrol_database
+ * @package    enrol_database_self
  * @copyright  2013 Darko Miletic
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
  * @author Darko Miletic
  *
  */
-class enrol_database_admin_setting_category extends admin_setting_configselect {
+class enrol_database_self_admin_setting_category extends admin_setting_configselect {
     public function __construct($name, $visiblename, $description) {
         parent::__construct($name, $visiblename, $description, 1, null);
     }
