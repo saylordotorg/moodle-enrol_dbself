@@ -19,14 +19,14 @@
  *
  * Sample cron entry:
  * # 5 minutes past 4am
- * 5 4 * * * $sudo -u www-data /usr/bin/php /var/www/moodle/enrol/database/cli/sync.php
+ * 5 4 * * * $sudo -u www-data /usr/bin/php /var/www/moodle/enrol/self_database/cli/sync.php
  *
  * Notes:
  *   - it is required to use the web server account when executing PHP CLI scripts
  *   - you need to change the "www-data" to match the apache user account
  *   - use "su" if "sudo" not available
  *
- * @package    enrol_database_sef
+ * @package    enrol_self_database
  * @copyright  2010 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -54,19 +54,19 @@ Options:
 -h, --help            Print out this help
 
 Example:
-\$ sudo -u www-data /usr/bin/php enrol/database_self/cli/sync.php
+\$ sudo -u www-data /usr/bin/php enrol/self_database/cli/sync.php
 
 Sample cron entry:
 # 5 minutes past 4am
-5 4 * * * sudo -u www-data /usr/bin/php /var/www/moodle/enrol/database_self/cli/sync.php
+5 4 * * * sudo -u www-data /usr/bin/php /var/www/moodle/enrol/self_database/cli/sync.php
 ";
 
     echo $help;
     die;
 }
 
-if (!enrol_is_enabled('database_self')) {
-    cli_error('enrol_database_self_plugin plugin is disabled, synchronisation stopped', 2);
+if (!enrol_is_enabled('self_database')) {
+    cli_error('enrol_self_database_plugin plugin is disabled, synchronisation stopped', 2);
 }
 
 if (empty($options['verbose'])) {
@@ -76,7 +76,7 @@ if (empty($options['verbose'])) {
 }
 
 /** @var enrol_database_plugin $enrol  */
-$enrol = enrol_get_plugin('database_self');
+$enrol = enrol_get_plugin('self_database');
 $result = 0;
 
 $result = $result | $enrol->sync_courses($trace);

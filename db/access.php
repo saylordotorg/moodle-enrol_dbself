@@ -17,7 +17,7 @@
 /**
  * Capabilities for database enrolment plugin.
  *
- * @package    enrol_database_self
+ * @package    enrol_self_database
  * @copyright  2010 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

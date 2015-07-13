@@ -19,7 +19,7 @@
  *
  * This plugin synchronises enrolment and roles with external database table.
  *
- * @package    enrol_database_self
+ * @package    enrol_self_database
  * @copyright  2010 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * @author  Petr Skoda - based on code by Martin Dougiamas, Martin Langhoff and others
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class enrol_database_self_plugin extends enrol_plugin {
+class enrol_self_database_plugin extends enrol_plugin {
     /**
      * Is it possible to delete enrol instance via standard UI?
      *
@@ -40,7 +40,7 @@ class enrol_database_self_plugin extends enrol_plugin {
      */
     public function can_delete_instance($instance) {
         $context = context_course::instance($instance->courseid);
-        if (!has_capability('enrol/database_self:config', $context)) {
+        if (!has_capability('enrol/self_database:config', $context)) {
             return false;
         }
         if (!enrol_is_enabled('database')) {
@@ -62,7 +62,7 @@ class enrol_database_self_plugin extends enrol_plugin {
      */
     public function can_hide_show_instance($instance) {
         $context = context_course::instance($instance->courseid);
-        return has_capability('enrol/database_self:config', $context);
+        return has_capability('enrol/self_database:config', $context);
     }
 
     /**
@@ -95,7 +95,7 @@ class enrol_database_self_plugin extends enrol_plugin {
         $instance = $ue->enrolmentinstance;
         $params = $manager->get_moodlepage()->url->params();
         $params['ue'] = $ue->id;
-        if ($this->allow_unenrol_user($instance, $ue) && has_capability('enrol/database_self:unenrol', $context)) {
+        if ($this->allow_unenrol_user($instance, $ue) && has_capability('enrol/self_database:unenrol', $context)) {
             $url = new moodle_url('/enrol/unenroluser.php', $params);
             $actions[] = new user_enrolment_action(new pix_icon('t/delete', ''), get_string('unenrol', 'enrol'), $url, array('class'=>'unenrollink', 'rel'=>$ue->id));
         }
