@@ -201,7 +201,7 @@ class enrol_database_self_plugin extends enrol_plugin {
                         $enrols[$course->id][$roleid] = $roleid;
                     }
 
-                    if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'database'), '*', IGNORE_MULTIPLE)) {
+                    if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
                         $instances[$course->id] = $instance;
                         continue;
                     }
@@ -242,19 +242,19 @@ class enrol_database_self_plugin extends enrol_plugin {
                 // Weird.
                 continue;
             }
-            $current = $DB->get_records('role_assignments', array('contextid'=>$context->id, 'userid'=>$user->id, 'component'=>'enrol_database_self', 'itemid'=>$instance->id), '', 'id, roleid');
+            $current = $DB->get_records('role_assignments', array('contextid'=>$context->id, 'userid'=>$user->id, 'component'=>'', 'itemid'=>$instance->id), '', 'id, roleid');
 
             $existing = array();
             foreach ($current as $r) {
                 if (isset($roles[$r->roleid])) {
                     $existing[$r->roleid] = $r->roleid;
                 } else {
-                    role_unassign($r->roleid, $user->id, $context->id, 'enrol_database_self', $instance->id);
+                    role_unassign($r->roleid, $user->id, $context->id, '', $instance->id);
                 }
             }
             foreach ($roles as $rid) {
                 if (!isset($existing[$rid])) {
-                    role_assign($rid, $user->id, $context->id, 'enrol_database_self', $instance->id);
+                    role_assign($rid, $user->id, $context->id, '', $instance->id);
                 }
             }
         }
@@ -265,7 +265,7 @@ class enrol_database_self_plugin extends enrol_plugin {
                   JOIN {course} c ON c.id = e.courseid
                   JOIN {role_assignments} ra ON ra.itemid = e.id
              LEFT JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                 WHERE ra.userid = :userid AND e.enrol = 'database'";
+                 WHERE ra.userid = :userid AND e.enrol = 'self'";
         $rs = $DB->get_recordset_sql($sql, array('userid'=>$user->id));
         foreach ($rs as $instance) {
             if (!$instance->cvisible and $ignorehidden) {
@@ -299,7 +299,7 @@ class enrol_database_self_plugin extends enrol_plugin {
                         // We want this "other user" to keep their roles.
                         continue;
                     }
-                    role_unassign_all(array('contextid'=>$context->id, 'userid'=>$user->id, 'component'=>'enrol_database_self', 'itemid'=>$instance->id));
+                    role_unassign_all(array('contextid'=>$context->id, 'userid'=>$user->id, 'component'=>'', 'itemid'=>$instance->id));
                 }
             }
         }
@@ -340,6 +340,7 @@ class enrol_database_self_plugin extends enrol_plugin {
         $userfield        = trim($this->get_config('remoteuserfield'));
         $rolefield        = trim($this->get_config('remoterolefield'));
         $otheruserfield   = trim($this->get_config('remoteotheruserfield'));
+        $statusfield      = trim($this->get_config('remotestatusfield'));
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $coursefield_l    = strtolower($coursefield);
@@ -367,7 +368,7 @@ class enrol_database_self_plugin extends enrol_plugin {
         if ($onecourse) {
             $sql = "SELECT c.id, c.visible, c.$localcoursefield AS mapping, c.shortname, e.id AS enrolid
                       FROM {course} c
-                 LEFT JOIN {enrol} e ON (e.courseid = c.id AND e.enrol = 'database')
+                 LEFT JOIN {enrol} e ON (e.courseid = c.id AND e.enrol = 'self')
                      WHERE c.id = :id";
             if (!$course = $DB->get_record_sql($sql, array('id'=>$onecourse))) {
                 // Course does not exist, nothing to sync.
@@ -418,7 +419,7 @@ class enrol_database_self_plugin extends enrol_plugin {
             $existing = array();
             $sql = "SELECT c.id, c.visible, c.$localcoursefield AS mapping, e.id AS enrolid, c.shortname
                       FROM {course} c
-                      JOIN {enrol} e ON (e.courseid = c.id AND e.enrol = 'database')";
+                      JOIN {enrol} e ON (e.courseid = c.id AND e.enrol = 'self')";
             $rs = $DB->get_recordset_sql($sql); // Watch out for idnumber duplicates.
             foreach ($rs as $course) {
                 if (empty($course->mapping)) {
@@ -438,7 +439,7 @@ class enrol_database_self_plugin extends enrol_plugin {
             }
             $sql = "SELECT c.id, c.visible, c.$localcoursefield AS mapping, c.shortname
                       FROM {course} c
-                 LEFT JOIN {enrol} e ON (e.courseid = c.id AND e.enrol = 'database')
+                 LEFT JOIN {enrol} e ON (e.courseid = c.id AND e.enrol = 'self')
                      WHERE e.id IS NULL $localnotempty";
             $rs = $DB->get_recordset_sql($sql, $params);
             foreach ($rs as $course) {
@@ -476,6 +477,9 @@ class enrol_database_self_plugin extends enrol_plugin {
         if ($otheruserfield) {
             $sqlfields[] = $otheruserfield;
         }
+        if ($statusfield) {
+            $sqlfields[] = $statusfield;
+        }
         foreach ($existing as $course) {
             if ($ignorehidden and !$course->visible) {
                 continue;
@@ -492,7 +496,7 @@ class enrol_database_self_plugin extends enrol_plugin {
             $usermapping   = array();
             $sql = "SELECT u.$localuserfield AS mapping, u.id AS userid, ue.status, ra.roleid
                       FROM {user} u
-                      JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.component = 'enrol_database_self' AND ra.itemid = :enrolid)
+                      JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.component = '' AND ra.itemid = :enrolid)
                  LEFT JOIN {user_enrolments} ue ON (ue.userid = u.id AND ue.enrolid = ra.itemid)
                      WHERE u.deleted = 0";
             $params = array('enrolid'=>$instance->id);
@@ -586,7 +590,7 @@ class enrol_database_self_plugin extends enrol_plugin {
                 // Assign extra roles.
                 foreach ($userroles as $roleid) {
                     if (empty($currentroles[$userid][$roleid])) {
-                        role_assign($roleid, $userid, $context->id, 'enrol_database_self', $instance->id);
+                        role_assign($roleid, $userid, $context->id, '', $instance->id);
                         $currentroles[$userid][$roleid] = $roleid;
                         $trace->output("assigning roles: $userid ==> $course->shortname as ".$allroles[$roleid]->shortname, 1);
                     }
@@ -595,7 +599,7 @@ class enrol_database_self_plugin extends enrol_plugin {
                 // Unassign removed roles.
                 foreach ($currentroles[$userid] as $cr) {
                     if (empty($userroles[$cr])) {
-                        role_unassign($cr, $userid, $context->id, 'enrol_database_self', $instance->id);
+                        role_unassign($cr, $userid, $context->id, '', $instance->id);
                         unset($currentroles[$userid][$cr]);
                         $trace->output("unsassigning roles: $userid ==> $course->shortname", 1);
                     }
@@ -641,7 +645,7 @@ class enrol_database_self_plugin extends enrol_plugin {
                             // We want this "other user" to keep their roles.
                             continue;
                         }
-                        role_unassign_all(array('contextid'=>$context->id, 'userid'=>$userid, 'component'=>'enrol_database_self', 'itemid'=>$instance->id));
+                        role_unassign_all(array('contextid'=>$context->id, 'userid'=>$userid, 'component'=>'', 'itemid'=>$instance->id));
 
                         $trace->output("unsassigning all roles: $userid ==> $course->shortname", 1);
                     }

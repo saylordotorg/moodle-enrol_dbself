@@ -82,6 +82,10 @@ if ($ADMIN->fulltree) {
     $otheruserfielddesc  = get_string('remoteotheruserfield_desc', 'enrol_database_self');
     $settings->add(new admin_setting_configtext('enrol_database_self/remoteotheruserfield', $otheruserfieldlabel, $otheruserfielddesc, ''));
 
+    $statusfieldlabel = get_string('remotestatusfield', 'enrol_database_self');
+    $statusfielddesc  = get_string('remotestatusfield_desc', 'enrol_database_self');
+    $settings->add(new admin_setting_configtext('enrol_database_self/remotestatusfield', $statusfieldlabel, $statusfielddesc, ''));
+
     if (!during_initial_install()) {
         $options = get_default_enrol_roles(context_system::instance());
         $student = get_archetype_roles('student');

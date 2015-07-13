@@ -66,7 +66,7 @@ Sample cron entry:
 }
 
 if (!enrol_is_enabled('database_self')) {
-    cli_error('enrol_database_plugin plugin is disabled, synchronisation stopped', 2);
+    cli_error('enrol_database_self_plugin plugin is disabled, synchronisation stopped', 2);
 }
 
 if (empty($options['verbose'])) {
