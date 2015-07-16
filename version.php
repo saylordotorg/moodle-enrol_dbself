@@ -24,7 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2015071300;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->version   = 2015071400;        // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires  = 2014110400;        // Requires this Moodle version
 $plugin->component = 'enrol_dbself';  // Full name of the plugin (used for diagnostics)
+$plugin->release   = "1.0"; // User-friendly version number
 //TODO: should we add cron sync?
