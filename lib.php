@@ -249,12 +249,12 @@ class enrol_dbself_plugin extends enrol_plugin {
                 if (isset($roles[$r->roleid])) {
                     $existing[$r->roleid] = $r->roleid;
                 } else {
-                    role_unassign($r->roleid, $user->id, $context->id, '', $instance->id);
+                    role_unassign($r->roleid, $user->id, $context->id, '');
                 }
             }
             foreach ($roles as $rid) {
                 if (!isset($existing[$rid])) {
-                    role_assign($rid, $user->id, $context->id, '', $instance->id);
+                    role_assign($rid, $user->id, $context->id, '');
                 }
             }
         }
@@ -590,7 +590,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                 // Assign extra roles.
                 foreach ($userroles as $roleid) {
                     if (empty($currentroles[$userid][$roleid])) {
-                        role_assign($roleid, $userid, $context->id, '', $instance->id);
+                        role_assign($roleid, $userid, $context->id, '');
                         $currentroles[$userid][$roleid] = $roleid;
                         $trace->output("assigning roles: $userid ==> $course->shortname as ".$allroles[$roleid]->shortname, 1);
                     }
@@ -599,7 +599,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                 // Unassign removed roles.
                 foreach ($currentroles[$userid] as $cr) {
                     if (empty($userroles[$cr])) {
-                        role_unassign($cr, $userid, $context->id, '', $instance->id);
+                        role_unassign($cr, $userid, $context->id, '');
                         unset($currentroles[$userid][$cr]);
                         $trace->output("unsassigning roles: $userid ==> $course->shortname", 1);
                     }
@@ -1050,9 +1050,9 @@ class enrol_dbself_plugin extends enrol_plugin {
         if ($roleid) {
             // this must be done after the enrolment event so that the role_assigned event is triggered afterwards
             if ($this->roles_protected()) {
-                role_assign($roleid, $userid, $context->id, 'enrol_'.$name, $instance->id);
+                role_assign($roleid, $userid, $context->id, '');
             } else {
-                role_assign($roleid, $userid, $context->id);
+                role_assign($roleid, $userid, $context->id, '');
             }
         }
 
@@ -1086,7 +1086,7 @@ class enrol_dbself_plugin extends enrol_plugin {
             // Role assignments were already synchronised in restore_instance(), we do not want any leftovers.
             return;
         }
-        role_assign($roleid, $userid, $contextid, 'enrol_'.$this->get_name(), $instance->id);
+        role_assign($roleid, $userid, $contextid, '');
     }
 
     /**
