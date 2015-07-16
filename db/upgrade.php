@@ -17,13 +17,13 @@
 /**
  * Database enrolment plugin upgrade.
  *
- * @package    enrol_self-database
+ * @package    enrol_dbself
  * @copyright  2011 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
-function xmldb_enrol_self-database_upgrade($oldversion) {
+function xmldb_enrol_dbself_upgrade($oldversion) {
     global $CFG, $DB;
 
     $dbman = $DB->get_manager();
