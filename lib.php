@@ -981,7 +981,98 @@ class enrol_dbself_plugin extends enrol_plugin {
             $this->enrol_user($instance, $userid, null, 0, 0, ENROL_USER_SUSPENDED);
         }
     }
+   /**
+     * Enrol user into course via enrol instance. Modified from enrollib due to check where $instance->enrol has to match the plugin name.
+     *
+     * @param stdClass $instance
+     * @param int $userid
+     * @param int $roleid optional role id
+     * @param int $timestart 0 means unknown
+     * @param int $timeend 0 means forever
+     * @param int $status default to ENROL_USER_ACTIVE for new enrolments, no change by default in updates
+     * @param bool $recovergrades restore grade history
+     * @return void
+     */
+    public function enrol_user(stdClass $instance, $userid, $roleid = null, $timestart = 0, $timeend = 0, $status = null, $recovergrades = null) {
+        global $DB, $USER, $CFG; // CFG necessary!!!
 
+        if ($instance->courseid == SITEID) {
+            throw new coding_exception('invalid attempt to enrol into frontpage course!');
+        }
+
+        $name = "self"; // Have to force the name to return as 'self' in order to pass the check three lines down.
+        $courseid = $instance->courseid;
+
+        if ($instance->enrol !== $name) {
+            throw new coding_exception('invalid enrol instance!');
+        }
+        $context = context_course::instance($instance->courseid, MUST_EXIST);
+        if (!isset($recovergrades)) {
+            $recovergrades = $CFG->recovergradesdefault;
+        }
+
+        $inserted = false;
+        $updated  = false;
+        if ($ue = $DB->get_record('user_enrolments', array('enrolid'=>$instance->id, 'userid'=>$userid))) {
+            //only update if timestart or timeend or status are different.
+            if ($ue->timestart != $timestart or $ue->timeend != $timeend or (!is_null($status) and $ue->status != $status)) {
+                $this->update_user_enrol($instance, $userid, $status, $timestart, $timeend);
+            }
+        } else {
+            $ue = new stdClass();
+            $ue->enrolid      = $instance->id;
+            $ue->status       = is_null($status) ? ENROL_USER_ACTIVE : $status;
+            $ue->userid       = $userid;
+            $ue->timestart    = $timestart;
+            $ue->timeend      = $timeend;
+            $ue->modifierid   = $USER->id;
+            $ue->timecreated  = time();
+            $ue->timemodified = $ue->timecreated;
+            $ue->id = $DB->insert_record('user_enrolments', $ue);
+
+            $inserted = true;
+        }
+
+        if ($inserted) {
+            // Trigger event.
+            $event = \core\event\user_enrolment_created::create(
+                    array(
+                        'objectid' => $ue->id,
+                        'courseid' => $courseid,
+                        'context' => $context,
+                        'relateduserid' => $ue->userid,
+                        'other' => array('enrol' => $name)
+                        )
+                    );
+            $event->trigger();
+        }
+
+        if ($roleid) {
+            // this must be done after the enrolment event so that the role_assigned event is triggered afterwards
+            if ($this->roles_protected()) {
+                role_assign($roleid, $userid, $context->id, 'enrol_'.$name, $instance->id);
+            } else {
+                role_assign($roleid, $userid, $context->id);
+            }
+        }
+
+        // Recover old grades if present.
+        if ($recovergrades) {
+            require_once("$CFG->libdir/gradelib.php");
+            grade_recover_history_grades($userid, $courseid);
+        }
+
+        // reset current user enrolment caching
+        if ($userid == $USER->id) {
+            if (isset($USER->enrol['enrolled'][$courseid])) {
+                unset($USER->enrol['enrolled'][$courseid]);
+            }
+            if (isset($USER->enrol['tempguest'][$courseid])) {
+                unset($USER->enrol['tempguest'][$courseid]);
+                remove_temp_course_roles($context);
+            }
+        }
+    }
     /**
      * Restore role assignment.
      *
