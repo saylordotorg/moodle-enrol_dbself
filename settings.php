@@ -82,24 +82,24 @@ if ($ADMIN->fulltree) {
     $otheruserfielddesc  = get_string('remoteotheruserfield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remoteotheruserfield', $otheruserfieldlabel, $otheruserfielddesc, ''));
 
-    $statusfieldlabel = get_string('remotecoursestatusfield', 'enrol_dbself');
-    $statusfielddesc  = get_string('remotecoursestatusfield_desc', 'enrol_dbself');
+    $coursestatusfieldlabel = get_string('remotecoursestatusfield', 'enrol_dbself');
+    $coursestatusfielddesc  = get_string('remotecoursestatusfield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursestatusfield', $coursestatusfieldlabel, $coursestatusfielddesc, ''));
 
-    $statusfieldlabel = get_string('remotecoursestatuscurrentfield', 'enrol_dbself');
-    $statusfielddesc  = get_string('remotecoursestatuscurrentfield_desc', 'enrol_dbself');
+    $coursestatuscurrentfieldlabel = get_string('remotecoursestatuscurrentfield', 'enrol_dbself');
+    $coursestatuscurrentfielddesc  = get_string('remotecoursestatuscurrentfield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursestatuscurrentfield', $coursestatuscurrentfieldlabel, $coursestatuscurrentfielddesc, ''));
 
-    $statusfieldlabel = get_string('remotecoursestatuscompletedfield', 'enrol_dbself');
-    $statusfielddesc  = get_string('remotecoursestatuscompletedfield_desc', 'enrol_dbself');
+    $coursestatuscompletedfieldlabel = get_string('remotecoursestatuscompletedfield', 'enrol_dbself');
+    $coursestatuscompletedfielddesc  = get_string('remotecoursestatuscompletedfield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursestatuscompletedfield', $coursestatuscompletedfieldlabel, $coursestatuscompletedfielddesc, ''));
 
-    $statusfieldlabel = get_string('remotecoursegradefield', 'enrol_dbself');
-    $statusfielddesc  = get_string('remotecoursegradefield_desc', 'enrol_dbself');
+    $coursegradefieldlabel = get_string('remotecoursegradefield', 'enrol_dbself');
+    $coursegradefielddesc  = get_string('remotecoursegradefield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursegradefield', $coursegradefieldlabel, $coursegradefielddesc, ''));
 
-    $statusfieldlabel = get_string('remotecoursecompletiondatefield', 'enrol_dbself');
-    $statusfielddesc  = get_string('remotecoursecompletiondatefield_desc', 'enrol_dbself');
+    $coursecompletiondatefieldlabel = get_string('remotecoursecompletiondatefield', 'enrol_dbself');
+    $coursecompletiondatefielddesc  = get_string('remotecoursecompletiondatefield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursecompletiondatefield', $coursecompletiondatefieldlabel, $coursecompletiondatefielddesc, ''));
 
     if (!during_initial_install()) {
