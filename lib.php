@@ -43,9 +43,6 @@ class enrol_dbself_plugin extends enrol_plugin {
         if (!has_capability('enrol/dbself:config', $context)) {
             return false;
         }
-        if (!enrol_is_enabled('database')) {
-            return true;
-        }
         if (!$this->get_config('dbtype') or !$this->get_config('remoteenroltable') or !$this->get_config('remotecoursefield') or !$this->get_config('remoteuserfield')) {
             return true;
         }
@@ -122,12 +119,22 @@ class enrol_dbself_plugin extends enrol_plugin {
         $userfield        = trim($this->get_config('remoteuserfield'));
         $rolefield        = trim($this->get_config('remoterolefield'));
         $otheruserfield   = trim($this->get_config('remoteotheruserfield'));
+        $coursestatusfield          = trim($this->get_config('remotecoursestatusfield'));
+        $coursestatuscurrentfield   = trim($this->get_config('remotecoursestatuscurrentfield'));
+        $coursestatuscompletedfield = trim($this->get_config('remotecoursestatuscompletedfield'));
+        $coursegradefield           = trim($this->get_config('remotecoursegradefield'));
+        $coursecompletiondatefield  = trim($this->get_config('remotecoursecompletiondatefield'));
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $coursefield_l    = strtolower($coursefield);
         $userfield_l      = strtolower($userfield);
         $rolefield_l      = strtolower($rolefield);
         $otheruserfieldlower = strtolower($otheruserfield);
+        $coursestatusfield_l = strtolower($coursestatusfield);
+        $coursestatuscurrentfield_l = strtolower($coursestatuscurrentfield);
+        $coursestatuscompletedfield_l = strtolower($coursestatuscompletedfield);
+        $coursegradfield_l = strtolower($coursegradefield);
+        $coursecompletiondatefield_l = strtolower($coursecompletiondatefield);
 
         $localrolefield   = $this->get_config('localrolefield');
         $localuserfield   = $this->get_config('localuserfield');
@@ -196,6 +203,8 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $roleid = $roles[$fields[$rolefield_l]];
                     }
 
+
+
                     $roleassigns[$course->id][$roleid] = $roleid;
                     if (empty($fields[$otheruserfieldlower])) {
                         $enrols[$course->id][$roleid] = $roleid;
@@ -208,6 +217,25 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                     $enrolid = $this->add_instance($course);
                     $instances[$course->id] = $DB->get_record('enrol', array('id'=>$enrolid));
+ 
+                    if (!empty($coursestatusfield)) { // Get status, grade, and completion date info only if the status field is defined.
+                        require_once("$CFG->libdir/gradelib.php");
+                        if (empty($fields[$coursestatusfield_l])) {
+                            // Assume that if the status field is empty, the course is still in progress.
+                            $instances[$course->id]['status'] = $coursestatuscurrentfield_l;
+                            continue; //No need to worry about grades or completion dates.
+                        }
+                        else {
+                            $instances[$course->id]['status'] = $fields[$coursestatusfield_l];
+                        }
+                        if (!empty($fields[$coursegradefield_l])) {
+                            $instances[$course->id]['grade'] = (int)$fields[$coursegradefield_l] / 10;
+                        }
+                        if (!empty($fields[$coursecompletiondatefield_l])) {
+                            $instances[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
+                        }
+
+                    }
                 }
             }
             $rs->Close();
@@ -256,6 +284,67 @@ class enrol_dbself_plugin extends enrol_plugin {
                 if (!isset($existing[$rid])) {
                     role_assign($rid, $user->id, $context->id, '');
                 }
+            }
+            if ($instances[$courseid]['status'] == $coursestatuscompletedfield_l) {
+                // Update/create final exam grade then create course completion if course is flagged as complete for the user.
+
+                //Get course shortname (needed to find final exam grade item id)
+                if ($cm = $DB->get_record('course', array('id' => $courseid))) {
+                    $courseshortname = $cm->shortname;
+                }
+                else {
+                    debugging('Unable to find course shortname or record for courseid ' . $courseid . " for userid " . $user->id . ". Course completion will be ignored.");
+                    continue;
+                }
+
+                $finalexamname = $courseshortname . ": Final Exam";
+
+                if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname))) {
+                    // Get the grade_item record for the course final exam.
+
+                    //Now get the current final exam grade for user if present.
+                    $oldgrade = grade_get_grades($courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $user->id);
+                    debugging('Old grade for courseid ' . $courseid . " and userid " . $user->id . " is " . $oldgrade->grade);
+                }
+                else{
+                    debugging('Unable to get final exam record for courseid ' . $courseid . " and userid " . $user->id . ". Course completion will be ignored.");
+                    continue;
+                }
+
+                if ((isset($oldgrade->grade) && $instances[$courseid]['grade'] > $oldgrade->grade)) || !isset($oldgrade->grade)) {
+                    // If imported grade is larger update the final exam grade
+                    $grade = array();
+                    $grade['userid'] = $user->id;
+                    $grade['rawgrade'] = $instances[$courseid]['grade'];
+
+                    grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
+                }
+                else if (isset($oldgrade->grade) && $oldgrade->grade >= $instances[$courseid]['grade']) {
+                    debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
+                    continue;
+                }
+                else {
+                    debugging("Unable to determine if there is a current final exam grade for courseid " . $courseid . " and userid " . $user->id . " or whether it is less than the imported grade.");
+                    continue;
+                }
+
+                //Mark course as complete. Create completion_completion object to handle completion info for that user and course.
+                $cparams = array(
+                    'userid' => $user->id,
+                    'course' => $courseid);
+                $cc = new completion_completion($cparams);
+
+                if ($cc->is_complete()) {
+                    continue;
+                    //Skip adding completion info for this course if the user has already completed this course. Possibility that his grade gets bumped up.
+                }
+
+                $completeddatestamp = strtotime($instances[$course->id]['completiondate']); //Convert the date string to a unix time stamp.
+
+                $cc->mark_enrolled(); 
+                $cc->mark_inprogress();
+                $cc->mark_complete($completeddatestamp);
+
             }
         }
 
@@ -340,7 +429,11 @@ class enrol_dbself_plugin extends enrol_plugin {
         $userfield        = trim($this->get_config('remoteuserfield'));
         $rolefield        = trim($this->get_config('remoterolefield'));
         $otheruserfield   = trim($this->get_config('remoteotheruserfield'));
-        $statusfield      = trim($this->get_config('remotestatusfield'));
+        $coursestatusfield          = trim($this->get_config('remotecoursestatusfield'));
+        $coursestatuscurrentfield   = trim($this->get_config('remotecoursestatuscurrentfield'));
+        $coursestatuscompletedfield = trim($this->get_config('remotecoursestatuscompletedfield'));
+        $coursegradefield           = trim($this->get_config('remotecoursegradefield'));
+        $coursecompletiondatefield  = trim($this->get_config('remotecoursecompletiondatefield'));
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $coursefield_l    = strtolower($coursefield);
