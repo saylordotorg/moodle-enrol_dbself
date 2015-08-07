@@ -219,20 +219,22 @@ class enrol_dbself_plugin extends enrol_plugin {
                     $instances[$course->id] = $DB->get_record('enrol', array('id'=>$enrolid));
  
                     if (!empty($coursestatusfield)) { // Get status, grade, and completion date info only if the status field is defined.
-                        require_once("$CFG->libdir/gradelib.php");
+
+                        $completioninfo = array();
+
                         if (empty($fields[$coursestatusfield_l])) {
                             // Assume that if the status field is empty, the course is still in progress.
-                            $instances[$course->id]['status'] = $coursestatuscurrentfield_l;
+                            $completioninfo[$course->id]['status'] = $coursestatuscurrentfield_l;
                             continue; //No need to worry about grades or completion dates.
                         }
                         else {
-                            $instances[$course->id]['status'] = $fields[$coursestatusfield_l];
+                            $completioninfo[$course->id]['status'] = $fields[$coursestatusfield_l];
                         }
                         if (!empty($fields[$coursegradefield_l])) {
-                            $instances[$course->id]['grade'] = (int)$fields[$coursegradefield_l] / 10;
+                            $completioninfo[$course->id]['grade'] = $fields[$coursegradefield_l];
                         }
                         if (!empty($fields[$coursecompletiondatefield_l])) {
-                            $instances[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
+                            $completioninfo[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
                         }
 
                     }
@@ -285,9 +287,10 @@ class enrol_dbself_plugin extends enrol_plugin {
                     role_assign($rid, $user->id, $context->id, '');
                 }
             }
-            if ($instances[$courseid]['status'] == $coursestatuscompletedfield_l) {
+            if ($completioninfo[$courseid]['status'] = $coursestatuscompletedfield_l) {
                 // Update/create final exam grade then create course completion if course is flagged as complete for the user.
-
+                require_once("$CFG->libdir/gradelib.php");
+                require_once($CFG->dirroot.'/completion/completion_completion.php');
                 //Get course shortname (needed to find final exam grade item id)
                 if ($cm = $DB->get_record('course', array('id' => $courseid))) {
                     $courseshortname = $cm->shortname;
@@ -303,23 +306,31 @@ class enrol_dbself_plugin extends enrol_plugin {
                     // Get the grade_item record for the course final exam.
 
                     //Now get the current final exam grade for user if present.
-                    $oldgrade = grade_get_grades($courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $user->id);
-                    debugging('Old grade for courseid ' . $courseid . " and userid " . $user->id . " is " . $oldgrade->grade);
+                    $grading_info = grade_get_grades($courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $user->id);
+                    if (!empty($grading_info->items)) {
+                        $item = $grading_info->items[0];
+                        if (isset($item->grades[$USER->id])) {
+                            $oldgrade = $item->grades[$USER->id];
+                        }
+
+                    }
+
+                    debugging('Old grade for courseid ' . $courseid . " and userid " . $user->id . " is " . $oldgrade);
                 }
                 else{
                     debugging('Unable to get final exam record for courseid ' . $courseid . " and userid " . $user->id . ". Course completion will be ignored.");
                     continue;
                 }
 
-                if ((isset($oldgrade->grade) && $instances[$courseid]['grade'] > $oldgrade->grade)) || !isset($oldgrade->grade)) {
+                if (($completioninfo[$courseid]['grade'] > $oldgrade) || !isset($oldgrade)) {
                     // If imported grade is larger update the final exam grade
                     $grade = array();
                     $grade['userid'] = $user->id;
-                    $grade['rawgrade'] = $instances[$courseid]['grade'];
+                    $grade['rawgrade'] = $completioninfo[$courseid]['grade'];
 
                     grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
                 }
-                else if (isset($oldgrade->grade) && $oldgrade->grade >= $instances[$courseid]['grade']) {
+                else if (isset($oldgrade->grade) && $oldgrade->grade >= $completioninfo[$courseid]['grade']) {
                     debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
                     continue;
                 }
@@ -339,7 +350,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                     //Skip adding completion info for this course if the user has already completed this course. Possibility that his grade gets bumped up.
                 }
 
-                $completeddatestamp = strtotime($instances[$course->id]['completiondate']); //Convert the date string to a unix time stamp.
+                $completeddatestamp = strtotime($completioninfo[$course->id]['completiondate']); //Convert the date string to a unix time stamp.
 
                 $cc->mark_enrolled(); 
                 $cc->mark_inprogress();
