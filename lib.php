@@ -304,13 +304,13 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                 if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname))) {
                     // Get the grade_item record for the course final exam.
-
+                    $oldgrade = "";
                     //Now get the current final exam grade for user if present.
                     $grading_info = grade_get_grades($courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $user->id);
                     if (!empty($grading_info->items)) {
                         $item = $grading_info->items[0];
-                        if (isset($item->grades[$USER->id])) {
-                            $oldgrade = $item->grades[$USER->id];
+                        if (isset($item->grades[$user->id])) {
+                            $oldgrade = $item->grades[$user->id];
                         }
 
                     }
@@ -322,7 +322,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                     continue;
                 }
 
-                if (($completioninfo[$courseid]['grade'] > $oldgrade) || !isset($oldgrade)) {
+                if (($completioninfo[$courseid]['grade'] > $oldgrade) || empty($oldgrade)) {
                     // If imported grade is larger update the final exam grade
                     $grade = array();
                     $grade['userid'] = $user->id;
@@ -330,7 +330,7 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                     grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
                 }
-                else if (isset($oldgrade->grade) && $oldgrade->grade >= $completioninfo[$courseid]['grade']) {
+                else if (!empty($oldgrade) && $oldgrade >= $completioninfo[$courseid]['grade']) {
                     debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
                     continue;
                 }
