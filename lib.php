@@ -203,21 +203,6 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $roleid = $roles[$fields[$rolefield_l]];
                     }
 
-
-
-                    $roleassigns[$course->id][$roleid] = $roleid;
-                    if (empty($fields[$otheruserfieldlower])) {
-                        $enrols[$course->id][$roleid] = $roleid;
-                    }
-
-                    if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
-                        $instances[$course->id] = $instance;
-                        continue;
-                    }
-
-                    $enrolid = $this->add_instance($course);
-                    $instances[$course->id] = $DB->get_record('enrol', array('id'=>$enrolid));
- 
                     debugging("Checking remote course status field.");
                     if (!empty($coursestatusfield_l)) { // Get status, grade, and completion date info only if the status field is defined.
 
@@ -227,7 +212,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                         if (empty($fields[$coursestatusfield_l])) {
                             // Assume that if the status field is empty, the course is still in progress.
                             $completioninfo[$course->id]['status'] = $coursestatuscurrentfield_l;
-                            continue; //No need to worry about grades or completion dates.
+                           // continue; //No need to worry about grades or completion dates.
                             debugging("Remote Course Status is not set in external DB. Ignoring exam completions.");
                         }
                         else {
@@ -243,6 +228,20 @@ class enrol_dbself_plugin extends enrol_plugin {
                         }
 
                     }
+
+                    $roleassigns[$course->id][$roleid] = $roleid;
+                    if (empty($fields[$otheruserfieldlower])) {
+                        $enrols[$course->id][$roleid] = $roleid;
+                    }
+
+                    if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
+                        $instances[$course->id] = $instance;
+                        continue;
+                    }
+
+                    $enrolid = $this->add_instance($course);
+                    $instances[$course->id] = $DB->get_record('enrol', array('id'=>$enrolid));
+
                 }
             }
             $rs->Close();
