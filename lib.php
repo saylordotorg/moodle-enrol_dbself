@@ -133,7 +133,7 @@ class enrol_dbself_plugin extends enrol_plugin {
         $coursestatusfield_l = strtolower($coursestatusfield);
         $coursestatuscurrentfield_l = strtolower($coursestatuscurrentfield);
         $coursestatuscompletedfield_l = strtolower($coursestatuscompletedfield);
-        $coursegradfield_l = strtolower($coursegradefield);
+        $coursegradefield_l = strtolower($coursegradefield);
         $coursecompletiondatefield_l = strtolower($coursecompletiondatefield);
 
         $localrolefield   = $this->get_config('localrolefield');
