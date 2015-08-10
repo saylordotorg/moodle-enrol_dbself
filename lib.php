@@ -218,7 +218,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                     $enrolid = $this->add_instance($course);
                     $instances[$course->id] = $DB->get_record('enrol', array('id'=>$enrolid));
  
-                    if (!empty($coursestatusfield)) { // Get status, grade, and completion date info only if the status field is defined.
+                    if (!empty($coursestatusfield_l)) { // Get status, grade, and completion date info only if the status field is defined.
 
                         $completioninfo = array();
 
@@ -226,15 +226,18 @@ class enrol_dbself_plugin extends enrol_plugin {
                             // Assume that if the status field is empty, the course is still in progress.
                             $completioninfo[$course->id]['status'] = $coursestatuscurrentfield_l;
                             continue; //No need to worry about grades or completion dates.
+                            debugging("Remote Course Status Field is not set. Ignoring exam completions.");
                         }
                         else {
                             $completioninfo[$course->id]['status'] = $fields[$coursestatusfield_l];
                         }
                         if (!empty($fields[$coursegradefield_l])) {
                             $completioninfo[$course->id]['grade'] = $fields[$coursegradefield_l];
+                            debugging("Course " . $course->id . " grade is " . $completioninfo[$course->id]['grade']);
                         }
                         else if (!empty($fields[$coursecompletiondatefield_l])) {
                             $completioninfo[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
+                            debugging("Course " . $course->id . " completion date is " . $completioninfo[$course->id]['completiondate']);
                         }
 
                     }
