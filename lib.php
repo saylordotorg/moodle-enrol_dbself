@@ -222,7 +222,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                             $completioninfo[$course->id]['grade'] = $fields[$coursegradefield_l];
                             debugging("Course " . $course->id . " grade is " . $completioninfo[$course->id]['grade']);
                         }
-                        else if (!empty($fields[$coursecompletiondatefield_l])) {
+                        if (!empty($fields[$coursecompletiondatefield_l])) {
                             $completioninfo[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
                             debugging("Course " . $course->id . " completion date is " . $completioninfo[$course->id]['completiondate']);
                         }
