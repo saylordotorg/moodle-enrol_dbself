@@ -327,45 +327,50 @@ class enrol_dbself_plugin extends enrol_plugin {
                     continue;
                 }
 
-                if (($completioninfo[$courseid]['grade'] > $currentgrade) || empty($currentgrade)) {
-                    // If imported grade is larger update the final exam grade
-                    $grade = array();
-                    $grade['userid'] = $user->id;
-                    $grade['rawgrade'] = $completioninfo[$courseid]['grade'];
+                if (isset($completioninfo[$courseid]['grade'])) {
+                   if (($completioninfo[$courseid]['grade'] > $currentgrade) || empty($currentgrade)) {
+                        // If imported grade is larger update the final exam grade
+                     $grade = array();
+                     $grade['userid'] = $user->id;
+                     $grade['rawgrade'] = $completioninfo[$courseid]['grade'];
 
-                    grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
-                }
-                else if (!empty($currentgrade) && $currentgrade >= $completioninfo[$courseid]['grade']) {
-                    debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
-                    continue;
-                }
-                else {
-                    debugging("Unable to determine if there is a current final exam grade for courseid " . $courseid . " and userid " . $user->id . " or whether it is less than the imported grade.");
-                    continue;
-                }
+                      grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
+                    }
+                    else if (!empty($currentgrade) && $currentgrade >= $completioninfo[$courseid]['grade']) {
+                        debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
+                        continue;
+                    }
+                    else {
+                        debugging("Unable to determine if there is a current final exam grade for courseid " . $courseid . " and userid " . $user->id . " or whether it is less than the imported grade.");
+                        continue;
+                    }
 
-                //Mark course as complete. Create completion_completion object to handle completion info for that user and course.
-                $cparams = array(
-                    'userid' => $user->id,
-                    'course' => $courseid);
-                $cc = new completion_completion($cparams);
+                    //Mark course as complete. Create completion_completion object to handle completion info for that user and course.
+                    $cparams = array(
+                        'userid' => $user->id,
+                        'course' => $courseid);
+                    $cc = new completion_completion($cparams);
 
-                if ($cc->is_complete()) {
-                    continue;
-                    //Skip adding completion info for this course if the user has already completed this course. Possibility that his grade gets bumped up.
+                    if ($cc->is_complete()) {
+                        continue;
+                        //Skip adding completion info for this course if the user has already completed this course. Possibility that his grade gets bumped up.
+                    }
+
+
+                    if (isset($completioninfo[$courseid]['completiondate'])) {
+                        $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
+                    }
+                    else {
+                        $completeddatestamp = time();
+                    }
+
+                    $cc->mark_enrolled(); 
+                    $cc->mark_inprogress();
+                    $cc->mark_complete($completeddatestamp);
                 }
-
-
-                if (isset($completioninfo[$courseid]['completiondate'])) {
-                    $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
+                else if (!isset($completioninfo[$courseid]['grade'])) {
+                    debugging("No grade info in external db for completed course " . $courseid . " for user " . $user->id . ".");
                 }
-                else {
-                    $completeddatestamp = time();
-                }
-
-                $cc->mark_enrolled(); 
-                $cc->mark_inprogress();
-                $cc->mark_complete($completeddatestamp);
 
             }
         }
