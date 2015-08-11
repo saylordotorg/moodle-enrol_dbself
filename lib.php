@@ -291,13 +291,13 @@ class enrol_dbself_plugin extends enrol_plugin {
                     role_assign($rid, $user->id, $context->id, '');
                 }
             }
-            if ($completioninfo[$courseid]['status'] = $coursestatuscompletedfield_l) {
+            if ($completioninfo[$courseid]['status'] == $coursestatuscompletedfield_l) {
                 // Update/create final exam grade then create course completion if course is flagged as complete for the user.
                 require_once("$CFG->libdir/gradelib.php");
                 require_once($CFG->dirroot.'/completion/completion_completion.php');
                 //Get course shortname (needed to find final exam grade item id)
                 if ($cm = $DB->get_record('course', array('id' => $courseid))) {
-                    $courseshortname = $cm->shortname;
+                    $courseshortname = trim($cm->shortname);
                 }
                 else {
                     debugging('Unable to find course shortname or record for courseid ' . $courseid . " for userid " . $user->id . ". Course completion will be ignored.");
@@ -361,7 +361,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
                     }
                     else {
-                        $completeddatestamp = time();
+                        $completeddatestamp = time(); //If not set, just use the current date.
                     }
 
                     $cc->mark_enrolled(); 
