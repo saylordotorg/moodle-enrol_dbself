@@ -292,6 +292,10 @@ class enrol_dbself_plugin extends enrol_plugin {
                     role_assign($rid, $user->id, $context->id, '');
                 }
             }
+        }
+
+        // Handle course completions and final grades.
+        foreach ($completioninfo as $courseid => $info) {
             if ($completioninfo[$courseid]['status'] == $coursestatuscompletedfield_l) {
                 // Update/create final exam grade then create course completion if course is flagged as complete for the user.
                 require_once("$CFG->libdir/gradelib.php");
