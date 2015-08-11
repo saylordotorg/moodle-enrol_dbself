@@ -207,16 +207,17 @@ class enrol_dbself_plugin extends enrol_plugin {
                     if (!empty($coursestatusfield_l)) { // Get status, grade, and completion date info only if the status field is defined.
 
                         $completioninfo = array();
-                        debugging("Remote Course Status field is not empty.");
+                        debugging("Remote Course Status field is not empty. Courseid " . $course->id);
 
                         if (empty($fields[$coursestatusfield_l])) {
                             // Assume that if the status field is empty, the course is still in progress.
                             $completioninfo[$course->id]['status'] = $coursestatuscurrentfield_l;
                            // continue; //No need to worry about grades or completion dates.
-                            debugging("Remote Course Status is not set in external DB. Ignoring exam completions.");
+                            debugging("Remote Course Status is not set in external DB for courseid " . $course->id . ". Ignoring exam completions.");
                         }
                         else {
                             $completioninfo[$course->id]['status'] = $fields[$coursestatusfield_l];
+                            debugging("Course id " . $course->id . " status is " . $completioninfo[$course->id]['status']);
                         }
                         if (!empty($fields[$coursegradefield_l])) {
                             $completioninfo[$course->id]['grade'] = $fields[$coursegradefield_l];
@@ -304,7 +305,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                     continue;
                 }
 
-                $finalexamname = trim($courseshortname) . ": Final Exam";
+                $finalexamname = $courseshortname . ": Final Exam";
 
                 if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname), IGNORE_MULTIPLE)) {
                     // Get the grade_item record for the course final exam.
