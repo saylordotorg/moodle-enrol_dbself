@@ -304,9 +304,9 @@ class enrol_dbself_plugin extends enrol_plugin {
                     continue;
                 }
 
-                $finalexamname = $courseshortname . ": Final Exam";
+                $finalexamname = trim($courseshortname) . ": Final Exam";
 
-                if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname))) {
+                if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname), IGNORE_MULTIPLE)) {
                     // Get the grade_item record for the course final exam.
                     $currentgrade = "";
                     //Now get the current final exam grade for user if present.
@@ -332,7 +332,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                         // If imported grade is larger update the final exam grade
                      $grade = array();
                      $grade['userid'] = $user->id;
-                     $grade['rawgrade'] = $completioninfo[$courseid]['grade'];
+                     $grade['rawgrade'] = ($completioninfo[$courseid]['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
 
                       grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
                     }
