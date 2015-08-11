@@ -167,6 +167,7 @@ class enrol_dbself_plugin extends enrol_plugin {
         $roleassigns = array();
         $enrols = array();
         $instances = array();
+        $completioninfo = array();
 
         if (!$extdb = $this->db_init()) {
             // Can not connect to database, sorry.
@@ -205,8 +206,6 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                     debugging("Checking remote course status field.");
                     if (!empty($coursestatusfield_l)) { // Get status, grade, and completion date info only if the status field is defined.
-
-                        $completioninfo = array();
                         debugging("Remote Course Status field is not empty. Courseid " . $course->id);
 
                         if (empty($fields[$coursestatusfield_l])) {
@@ -295,8 +294,8 @@ class enrol_dbself_plugin extends enrol_plugin {
         }
 
         // Handle course completions and final grades.
-        foreach ($completioninfo as $courseid => $info) {
-            if ($completioninfo[$courseid]['status'] == $coursestatuscompletedfield_l) {
+        foreach ($completioninfo as $courseid => $cinfo) {
+            if ($cinfo['status'] == $coursestatuscompletedfield_l) {
                 // Update/create final exam grade then create course completion if course is flagged as complete for the user.
                 require_once("$CFG->libdir/gradelib.php");
                 require_once($CFG->dirroot.'/completion/completion_completion.php');
@@ -311,7 +310,7 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                 $finalexamname = $courseshortname . ": Final Exam";
 
-                if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname), IGNORE_MULTIPLE)) {
+                if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname, 'courseid' => $courseid))) {
                     // Get the grade_item record for the course final exam.
                     $currentgrade = "";
                     //Now get the current final exam grade for user if present.
@@ -332,16 +331,16 @@ class enrol_dbself_plugin extends enrol_plugin {
                     continue;
                 }
 
-                if (isset($completioninfo[$courseid]['grade'])) {
-                   if (($completioninfo[$courseid]['grade'] > $currentgrade) || empty($currentgrade)) {
+                if (isset($cinfo['grade'])) {
+                   if (($cinfo['grade'] > $currentgrade) || empty($currentgrade)) {
                         // If imported grade is larger update the final exam grade
                      $grade = array();
                      $grade['userid'] = $user->id;
-                     $grade['rawgrade'] = ($completioninfo[$courseid]['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
+                     $grade['rawgrade'] = ($cinfo['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
 
                       grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
                     }
-                    else if (!empty($currentgrade) && $currentgrade >= $completioninfo[$courseid]['grade']) {
+                    else if (!empty($currentgrade) && $currentgrade >= $cinfo['grade']) {
                         debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
                         continue;
                     }
@@ -362,8 +361,8 @@ class enrol_dbself_plugin extends enrol_plugin {
                     }
 
 
-                    if (isset($completioninfo[$courseid]['completiondate'])) {
-                        $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
+                    if (isset($cinfo['completiondate'])) {
+                        $completeddatestamp = strtotime($cinfo['completiondate']); //Convert the date string to a unix time stamp.
                     }
                     else {
                         $completeddatestamp = time(); //If not set, just use the current date.
@@ -373,7 +372,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                     $cc->mark_inprogress();
                     $cc->mark_complete($completeddatestamp);
                 }
-                else if (!isset($completioninfo[$courseid]['grade'])) {
+                else if (!isset($cinfo['grade'])) {
                     debugging("No grade info in external db for completed course " . $courseid . " for user " . $user->id . ".");
                 }
 
