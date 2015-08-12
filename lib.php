@@ -798,7 +798,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $courseshortname = trim($cm->shortname);
                     }
                     else {
-                        debugging('Unable to find course shortname or record for courseid ' . $cinfo['courseid'] . " for userid " . $userid . ". Course completion will be ignored.");
+                        $trace->output('Error: Unable to find course shortname or record for courseid ' . $cinfo['courseid'] . " for userid " . $userid . ". Course completion will be ignored.");
                         continue;
                     }
 
@@ -818,10 +818,10 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                         }
 
-                        debugging('Old grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " is " . $currentgrade);
+                        $trace->output('Old grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " is " . $currentgrade);
                     }
                     else{
-                        debugging('Unable to get final exam record for courseid ' . $cinfo['courseid'] . " and userid " . $userid . ". Course completion will be ignored.");
+                        $trace->output('Error: Unable to get final exam record for courseid ' . $cinfo['courseid'] . " and userid " . $userid . ". Course completion will be ignored.");
                         continue;
                     }
 
@@ -833,9 +833,10 @@ class enrol_dbself_plugin extends enrol_plugin {
                             $grade['rawgrade'] = ($cinfo['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
 
                             grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
+                            $trace->output('Updating grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " to " . $grade['rawgrade']);
                         }
                         else if (!empty($currentgrade) && $currentgrade >= $cinfo['grade']) {
-                            debugging("Current grade for final exam for courseid " . $cinfo['courseid'] . " and userid " . $userid . " is larger or equal to the imported grade. Not updating grade.");
+                            $trace->output("Current grade for final exam for courseid " . $cinfo['courseid'] . " and userid " . $userid . " is larger or equal to the imported grade. Not updating grade.");
                             continue;
                         }
                         else {
@@ -870,9 +871,11 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $cc->mark_enrolled($enroldatestamp); 
                         $cc->mark_inprogress($enroldatestamp);
                         $cc->mark_complete($completeddatestamp);
+
+                        $trace->output('Setting completion data for userid ' . $userid . ' and courseid ' . $cinfo['courseid']".");
                     }
                     else if (!isset($cinfo['grade'])) {
-                        debugging("No grade info in external db for completed course " . $cinfo['courseid'] . " for user " . $userid . ".");
+                        $trace->output("Error: No grade info in external db for completed course " . $cinfo['courseid'] . " for user " . $userid . ".");
                     }
 
                 }
