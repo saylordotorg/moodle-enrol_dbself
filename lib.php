@@ -818,7 +818,7 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                         }
 
-                        $trace->output('Old grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " is " . $currentgrade);
+                        $trace->output('Old grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " is " . $currentgrade . ".");
                     }
                     else{
                         $trace->output('Error: Unable to get final exam record for courseid ' . $cinfo['courseid'] . " and userid " . $userid . ". Course completion will be ignored.");
@@ -833,7 +833,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                             $grade['rawgrade'] = ($cinfo['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
 
                             grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
-                            $trace->output('Updating grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " to " . $grade['rawgrade']);
+                            $trace->output('Updating grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " to " . $grade['rawgrade'] . ".");
                         }
                         else if (!empty($currentgrade) && $currentgrade >= $cinfo['grade']) {
                             $trace->output("Current grade for final exam for courseid " . $cinfo['courseid'] . " and userid " . $userid . " is larger or equal to the imported grade. Not updating grade.");
@@ -872,7 +872,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $cc->mark_inprogress($enroldatestamp);
                         $cc->mark_complete($completeddatestamp);
 
-                        $trace->output('Setting completion data for userid ' . $userid . ' and courseid ' . $cinfo['courseid']".");
+                        $trace->output('Setting completion data for userid ' . $userid . ' and courseid ' . $cinfo['courseid'] . ".");
                     }
                     else if (!isset($cinfo['grade'])) {
                         $trace->output("Error: No grade info in external db for completed course " . $cinfo['courseid'] . " for user " . $userid . ".");
