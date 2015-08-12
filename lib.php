@@ -474,6 +474,7 @@ class enrol_dbself_plugin extends enrol_plugin {
         $coursestatuscurrentfield   = trim($this->get_config('remotecoursestatuscurrentfield'));
         $coursestatuscompletedfield = trim($this->get_config('remotecoursestatuscompletedfield'));
         $coursegradefield           = trim($this->get_config('remotecoursegradefield'));
+        $courseenroldatefield       = trim($this->get_config('remotecourseenroldatefield'));
         $coursecompletiondatefield  = trim($this->get_config('remotecoursecompletiondatefield'));
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
@@ -481,6 +482,12 @@ class enrol_dbself_plugin extends enrol_plugin {
         $userfield_l      = strtolower($userfield);
         $rolefield_l      = strtolower($rolefield);
         $otheruserfieldlower = strtolower($otheruserfield);
+        $coursestatusfield_l = strtolower($coursestatusfield);
+        $coursestatuscurrentfield_l = strtolower($coursestatuscurrentfield);
+        $coursestatuscompletedfield_l = strtolower($coursestatuscompletedfield);
+        $coursegradefield_l = strtolower($coursegradefield);
+        $courseenroldatefield_l = strtolower($courseenroldatefield);
+        $coursecompletiondatefield_l = strtolower($coursecompletiondatefield);
 
         $localrolefield   = $this->get_config('localrolefield');
         $localuserfield   = $this->get_config('localuserfield');
@@ -611,8 +618,17 @@ class enrol_dbself_plugin extends enrol_plugin {
         if ($otheruserfield) {
             $sqlfields[] = $otheruserfield;
         }
-        if ($statusfield) {
-            $sqlfields[] = $statusfield;
+        if ($coursestatusfield) {
+            $sqlfields[] = $coursestatusfield;
+        }
+        if ($coursegradefield) {
+            $sqlfields[] = $coursegradefield;
+        }
+        if ($courseenroldatefield) {
+            $sqlfields[] = $courseenroldatefield;
+        }
+        if ($coursecompletiondatefield) {
+            $sqlfields[] = $coursecompletiondatefield;
         }
         foreach ($existing as $course) {
             if ($ignorehidden and !$course->visible) {
@@ -624,10 +640,11 @@ class enrol_dbself_plugin extends enrol_plugin {
             $context = context_course::instance($course->id);
 
             // Get current list of enrolled users with their roles.
-            $currentroles  = array();
-            $currentenrols = array();
-            $currentstatus = array();
-            $usermapping   = array();
+            $currentroles       = array();
+            $currentenrols      = array();
+            $currentstatus      = array();
+            $usermapping        = array();
+            $completioninfo     = array();
             $sql = "SELECT u.$localuserfield AS mapping, u.id AS userid, ue.status, ra.roleid
                       FROM {user} u
                       JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.component = '' AND ra.itemid = :enrolid)
@@ -692,6 +709,28 @@ class enrol_dbself_plugin extends enrol_plugin {
                         if (empty($fields[$otheruserfieldlower])) {
                             $requestedenrols[$userid][$roleid] = $roleid;
                         }
+                        if (!empty($coursestatusfield_l)) { // Get status, grade, and completion date info only if the status field is defined.
+
+                            if (empty($fields[$coursestatusfield_l])) {
+                                // Assume that if the status field is empty, the course is still in progress.
+                                $completioninfo[$userid]['status'] = $coursestatuscurrentfield_l;
+                                $completioninfo[$userid]['courseid'] = $course->mapping;
+                                // continue; //No need to worry about grades or completion dates.
+                            }
+                            else {
+                                $completioninfo[$userid]['status'] = $fields[$coursestatusfield_l];
+                            }
+                            if (!empty($fields[$coursegradefield_l])) {
+                                $completioninfo[$userid]['grade'] = $fields[$coursegradefield_l];
+                            }
+                            if (!empty($fields[$courseenroldatefield_l])) {
+                                $completioninfo[$userid]['enroldate'] = $fields[$courseenroldatefield_l];
+                            }
+                            if (!empty($fields[$coursecompletiondatefield_l])) {
+                                $completioninfo[$userid]['completiondate'] = $fields[$coursecompletiondatefield_l];
+                            }
+
+                        }
                     }
                 }
                 $rs->Close();
@@ -746,6 +785,97 @@ class enrol_dbself_plugin extends enrol_plugin {
                 // These are roles that exist only in Moodle, not the external database
                 // so make sure the unenrol actions will handle them by setting status.
                 $currentstatus += array($userid => ENROL_USER_ACTIVE);
+            }
+
+            // Handle course completions and final exam grades.
+            foreach ($completioninfo as $userid => $cinfo) {
+                if ($cinfo['status'] == $coursestatuscompletedfield_l) {
+                    // Update/create final exam grade then create course completion if course is flagged as complete for the user.
+                    require_once("$CFG->libdir/gradelib.php");
+                    require_once($CFG->dirroot.'/completion/completion_completion.php');
+                    //Get course shortname (needed to find final exam grade item id)
+                    if ($cm = $DB->get_record('course', array('id' => $cinfo['courseid']))) {
+                        $courseshortname = trim($cm->shortname);
+                    }
+                    else {
+                        debugging('Unable to find course shortname or record for courseid ' . $cinfo['courseid'] . " for userid " . $userid . ". Course completion will be ignored.");
+                        continue;
+                    }
+
+                    $finalexamname = $courseshortname . ": Final Exam";
+
+                    if ($gi = $DB->get_record('grade_items', array('itemname' => $finalexamname, 'courseid' => $cinfo['courseid']))) {
+                        // Get the grade_item record for the course final exam.
+                        $currentgrade = "";
+                        //Now get the current final exam grade for user if present.
+                        $grading_info = grade_get_grades($cinfo['courseid'], $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $userid);
+                        if (!empty($grading_info->items)) {
+                            $item = $grading_info->items[0];
+                            if (isset($item->grades[$userid]->grade)) {
+                                $currentgrade = $item->grades[$userid]->grade + 0;
+                                $currentgrade = $currentgrade * 10;
+                            }
+
+                        }
+
+                        debugging('Old grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " is " . $currentgrade);
+                    }
+                    else{
+                        debugging('Unable to get final exam record for courseid ' . $cinfo['courseid'] . " and userid " . $userid . ". Course completion will be ignored.");
+                        continue;
+                    }
+
+                    if (isset($cinfo['grade'])) {
+                        if (($cinfo['grade'] > $currentgrade) || empty($currentgrade)) {
+                            // If imported grade is larger update the final exam grade
+                            $grade = array();
+                            $grade['userid'] = $userid;
+                            $grade['rawgrade'] = ($cinfo['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
+
+                            grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
+                        }
+                        else if (!empty($currentgrade) && $currentgrade >= $cinfo['grade']) {
+                            debugging("Current grade for final exam for courseid " . $cinfo['courseid'] . " and userid " . $userid . " is larger or equal to the imported grade. Not updating grade.");
+                            continue;
+                        }
+                        else {
+                            debugging("Unable to determine if there is a current final exam grade for courseid " . $cinfo['courseid'] . " and userid " . $userid . " or whether it is less than the imported grade.");
+                            continue;
+                        }
+
+                        //Mark course as complete. Create completion_completion object to handle completion info for that user and course.
+                        $cparams = array(
+                            'userid' => $userid,
+                            'course' => $cinfo['courseid']);
+                        $cc = new completion_completion($cparams);
+
+                        if ($cc->is_complete()) {
+                            continue;
+                            //Skip adding completion info for this course if the user has already completed this course. Possibility that his grade gets bumped up.
+                        }
+
+                        if (isset($cinfo['completiondate'])) {
+                            $completeddatestamp = strtotime($cinfo['completiondate']); //Convert the date string to a unix time stamp.
+                        }
+                        else {
+                            $completeddatestamp = time(); //If not set, just use the current date.
+                        }
+                        if (isset($cinfo['enroldate'])) {
+                            $enroldatestamp = strtotime($cinfo['enroldate']); //Convert the date string to a unix time stamp.
+                        }
+                        else {
+                            $enroldatestamp = $completeddatestamp;
+                        }
+
+                        $cc->mark_enrolled($enroldatestamp); 
+                        $cc->mark_inprogress($enroldatestamp);
+                        $cc->mark_complete($completeddatestamp);
+                    }
+                    else if (!isset($cinfo['grade'])) {
+                        debugging("No grade info in external db for completed course " . $cinfo['courseid'] . " for user " . $userid . ".");
+                    }
+
+                }
             }
 
             // Deal with enrolments removed from external table.
