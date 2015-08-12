@@ -263,30 +263,17 @@ class enrol_dbself_plugin extends enrol_plugin {
                 // Ignored.
                 continue;
             }
-            $instance = $instances[$courseid];
-
-            if (isset($completioninfo[$courseid]['completiondate'])) {
-                $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
-                }
-            else {
-                $completeddatestamp = time(); //If not set, just use the current date.
-            }
-            if (isset($completioninfo[$courseid]['enroldate'])) {
-                $enroldatestamp = strtotime($completioninfo[$courseid]['enroldate']); //Convert the date string to a unix time stamp.
-            }
-            else {
-                $enroldatestamp = $completeddatestamp;
-            }            
+            $instance = $instances[$courseid];          
 
             if (isset($enrols[$courseid])) {
                 if ($e = $DB->get_record('user_enrolments', array('userid' => $user->id, 'enrolid' => $instance->id))) {
                     // Reenable enrolment when previously disable enrolment refreshed.
                     if ($e->status == ENROL_USER_SUSPENDED) {
-                        $this->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE, $enroldatestamp, $completeddatestamp);
+                        $this->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE);
                     }
                 } else {
                     $roleid = reset($enrols[$courseid]);
-                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, $completeddatestamp, ENROL_USER_ACTIVE);
+                    $this->enrol_user($instance, $user->id, $roleid, ENROL_USER_ACTIVE);
                 }
             }
 
