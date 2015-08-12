@@ -98,6 +98,10 @@ if ($ADMIN->fulltree) {
     $coursegradefielddesc  = get_string('remotecoursegradefield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursegradefield', $coursegradefieldlabel, $coursegradefielddesc, ''));
 
+    $courseenroldatefieldlabel = get_string('remotecourseenroldatefield', 'enrol_dbself');
+    $courseenroldatefielddesc  = get_string('remotecourseenroldatefield_desc', 'enrol_dbself');
+    $settings->add(new admin_setting_configtext('enrol_dbself/remotecourseenroldatefield', $courseenroldatefieldlabel, $courseenroldatefielddesc, ''));
+
     $coursecompletiondatefieldlabel = get_string('remotecoursecompletiondatefield', 'enrol_dbself');
     $coursecompletiondatefielddesc  = get_string('remotecoursecompletiondatefield_desc', 'enrol_dbself');
     $settings->add(new admin_setting_configtext('enrol_dbself/remotecoursecompletiondatefield', $coursecompletiondatefieldlabel, $coursecompletiondatefielddesc, ''));

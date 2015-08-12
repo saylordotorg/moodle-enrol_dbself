@@ -123,6 +123,7 @@ class enrol_dbself_plugin extends enrol_plugin {
         $coursestatuscurrentfield   = trim($this->get_config('remotecoursestatuscurrentfield'));
         $coursestatuscompletedfield = trim($this->get_config('remotecoursestatuscompletedfield'));
         $coursegradefield           = trim($this->get_config('remotecoursegradefield'));
+        $courseenroldatefield       = trim($this->get_config('remotecourseenroldatefield'));
         $coursecompletiondatefield  = trim($this->get_config('remotecoursecompletiondatefield'));
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
@@ -134,6 +135,7 @@ class enrol_dbself_plugin extends enrol_plugin {
         $coursestatuscurrentfield_l = strtolower($coursestatuscurrentfield);
         $coursestatuscompletedfield_l = strtolower($coursestatuscompletedfield);
         $coursegradefield_l = strtolower($coursegradefield);
+        $courseenroldatefield_l = strtolower($courseenroldatefield);
         $coursecompletiondatefield_l = strtolower($coursecompletiondatefield);
 
         $localrolefield   = $this->get_config('localrolefield');
@@ -222,6 +224,9 @@ class enrol_dbself_plugin extends enrol_plugin {
                             $completioninfo[$course->id]['grade'] = $fields[$coursegradefield_l];
                             debugging("Course " . $course->id . " grade is " . $completioninfo[$course->id]['grade']);
                         }
+                        if (!empty($fields[$courseenroldatefield_l])) {
+                            $completioninfo[$course->id]['enroldate'] = $fields[$courseenroldatefield_l];
+                        }
                         if (!empty($fields[$coursecompletiondatefield_l])) {
                             $completioninfo[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
                             debugging("Course " . $course->id . " completion date is " . $completioninfo[$course->id]['completiondate']);
@@ -260,15 +265,28 @@ class enrol_dbself_plugin extends enrol_plugin {
             }
             $instance = $instances[$courseid];
 
+            if (isset($completioninfo[$courseid]['completiondate'])) {
+                $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
+                }
+            else {
+                $completeddatestamp = time(); //If not set, just use the current date.
+            }
+            if (isset($completioninfo[$courseid]['enroldate'])) {
+                $enroldatestamp = strtotime($completioninfo[$courseid]['enroldate']); //Convert the date string to a unix time stamp.
+            }
+            else {
+                $enroldatestamp = $completeddatestamp;
+            }            
+
             if (isset($enrols[$courseid])) {
                 if ($e = $DB->get_record('user_enrolments', array('userid' => $user->id, 'enrolid' => $instance->id))) {
                     // Reenable enrolment when previously disable enrolment refreshed.
                     if ($e->status == ENROL_USER_SUSPENDED) {
-                        $this->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE);
+                        $this->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE, $enroldatestamp, $completeddatestamp);
                     }
                 } else {
                     $roleid = reset($enrols[$courseid]);
-                    $this->enrol_user($instance, $user->id, $roleid, 0, 0, ENROL_USER_ACTIVE);
+                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, $completeddatestamp, ENROL_USER_ACTIVE);
                 }
             }
 
@@ -293,7 +311,7 @@ class enrol_dbself_plugin extends enrol_plugin {
             }
         }
 
-        // Handle course completions and final grades.
+        // Handle course completions and final exam grades.
         foreach ($completioninfo as $courseid => $cinfo) {
             if ($cinfo['status'] == $coursestatuscompletedfield_l) {
                 // Update/create final exam grade then create course completion if course is flagged as complete for the user.
@@ -360,16 +378,21 @@ class enrol_dbself_plugin extends enrol_plugin {
                         //Skip adding completion info for this course if the user has already completed this course. Possibility that his grade gets bumped up.
                     }
 
-
                     if (isset($cinfo['completiondate'])) {
                         $completeddatestamp = strtotime($cinfo['completiondate']); //Convert the date string to a unix time stamp.
                     }
                     else {
                         $completeddatestamp = time(); //If not set, just use the current date.
                     }
+                    if (isset($cinfo['enroldate'])) {
+                        $enroldatestamp = strtotime($cinfo['enroldate']); //Convert the date string to a unix time stamp.
+                    }
+                    else {
+                        $enroldatestamp = $completeddatestamp;
+                    }
 
-                    $cc->mark_enrolled(); 
-                    $cc->mark_inprogress();
+                    $cc->mark_enrolled($enroldatestamp); 
+                    $cc->mark_inprogress($enroldatestamp);
                     $cc->mark_complete($completeddatestamp);
                 }
                 else if (!isset($cinfo['grade'])) {
