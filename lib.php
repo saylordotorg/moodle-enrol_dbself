@@ -1340,6 +1340,68 @@ class enrol_dbself_plugin extends enrol_plugin {
         }
     }
     /**
+     * Store user_enrolments changes and trigger event. Modified from enrollib due to check where $instance->enrol has to match the plugin name.
+     *
+     * @param stdClass $instance
+     * @param int $userid
+     * @param int $status
+     * @param int $timestart
+     * @param int $timeend
+     * @return void
+     */
+    public function update_user_enrol(stdClass $instance, $userid, $status = NULL, $timestart = NULL, $timeend = NULL) {
+        global $DB, $USER;
+
+        $name = 'self'; //We are looking for, and updating, self enrols. Have to force $name to 'self' to pass the check below.
+
+        if ($instance->enrol !== $name) {
+            throw new coding_exception('invalid enrol instance!');
+        }
+
+        if (!$ue = $DB->get_record('user_enrolments', array('enrolid'=>$instance->id, 'userid'=>$userid))) {
+            // weird, user not enrolled
+            return;
+        }
+
+        $modified = false;
+        if (isset($status) and $ue->status != $status) {
+            $ue->status = $status;
+            $modified = true;
+        }
+        if (isset($timestart) and $ue->timestart != $timestart) {
+            $ue->timestart = $timestart;
+            $modified = true;
+        }
+        if (isset($timeend) and $ue->timeend != $timeend) {
+            $ue->timeend = $timeend;
+            $modified = true;
+        }
+
+        if (!$modified) {
+            // no change
+            return;
+        }
+
+        $ue->modifierid = $USER->id;
+        $DB->update_record('user_enrolments', $ue);
+        context_course::instance($instance->courseid)->mark_dirty(); // reset enrol caches
+
+        // Invalidate core_access cache for get_suspended_userids.
+        cache_helper::invalidate_by_definition('core', 'suspended_userids', array(), array($instance->courseid));
+
+        // Trigger event.
+        $event = \core\event\user_enrolment_updated::create(
+                array(
+                    'objectid' => $ue->id,
+                    'courseid' => $instance->courseid,
+                    'context' => context_course::instance($instance->courseid),
+                    'relateduserid' => $ue->userid,
+                    'other' => array('enrol' => $name)
+                    )
+                );
+        $event->trigger();
+    }
+    /**
      * Restore role assignment.
      *
      * @param stdClass $instance
