@@ -834,7 +834,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                             $grade['userid'] = $userid;
                             $grade['rawgrade'] = ($cinfo['grade'] / 10); //learn.saylor.org is currently using rawmaxgrade of 10.0000
 
-                            grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
+                            grade_update('mod/quiz', $cinfo['courseid'], $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
                             $trace->output('Updating grade for courseid ' . $cinfo['courseid'] . " and userid " . $userid . " to " . $grade['rawgrade'] . ".");
                         }
                         else if (!empty($currentgrade) && $currentgrade >= $cinfo['grade']) {
