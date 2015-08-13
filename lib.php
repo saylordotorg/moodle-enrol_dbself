@@ -714,11 +714,14 @@ class enrol_dbself_plugin extends enrol_plugin {
                             if (empty($fields[$coursestatusfield_l])) {
                                 // Assume that if the status field is empty, the course is still in progress.
                                 $completioninfo[$userid]['status'] = $coursestatuscurrentfield_l;
-                                $completioninfo[$userid]['courseid'] = $course->id;
+
                             }
                             else {
                                 $completioninfo[$userid]['status'] = $fields[$coursestatusfield_l];
                             }
+
+                            $completioninfo[$userid]['courseid'] = $course->id;
+
                             if (!empty($fields[$coursegradefield_l])) {
                                 $completioninfo[$userid]['grade'] = $fields[$coursegradefield_l];
                             }
