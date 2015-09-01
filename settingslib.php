@@ -18,7 +18,7 @@
  * Database enrolment plugin custom settings.
  *
  * @package    enrol_dbself
- * @copyright  2013 Darko Miletic
+ * @copyright  2013 Darko Miletic, 2015 Saylor Academy {@link http://www.saylor.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
