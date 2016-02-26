@@ -206,30 +206,30 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $roleid = $roles[$fields[$rolefield_l]];
                     }
 
-                    debugging("Checking remote course status field.");
+                    //debugging("Checking remote course status field.");
                     if (!empty($coursestatusfield_l)) { // Get status, grade, and completion date info only if the status field is defined.
-                        debugging("Remote Course Status field is not empty. Courseid " . $course->id);
+                        //debugging("Remote Course Status field is not empty. Courseid " . $course->id);
 
                         if (empty($fields[$coursestatusfield_l])) {
                             // Assume that if the status field is empty, the course is still in progress.
                             $completioninfo[$course->id]['status'] = $coursestatuscurrentfield_l;
                            // continue; //No need to worry about grades or completion dates.
-                            debugging("Remote Course Status is not set in external DB for courseid " . $course->id . ". Ignoring exam completions.");
+                            //debugging("Remote Course Status is not set in external DB for courseid " . $course->id . ". Ignoring exam completions.");
                         }
                         else {
                             $completioninfo[$course->id]['status'] = $fields[$coursestatusfield_l];
-                            debugging("Course id " . $course->id . " status is " . $completioninfo[$course->id]['status']);
+                            //debugging("Course id " . $course->id . " status is " . $completioninfo[$course->id]['status']);
                         }
                         if (!empty($fields[$coursegradefield_l])) {
                             $completioninfo[$course->id]['grade'] = $fields[$coursegradefield_l];
-                            debugging("Course " . $course->id . " grade is " . $completioninfo[$course->id]['grade']);
+                            //debugging("Course " . $course->id . " grade is " . $completioninfo[$course->id]['grade']);
                         }
                         if (!empty($fields[$courseenroldatefield_l])) {
                             $completioninfo[$course->id]['enroldate'] = $fields[$courseenroldatefield_l];
                         }
                         if (!empty($fields[$coursecompletiondatefield_l])) {
                             $completioninfo[$course->id]['completiondate'] = $fields[$coursecompletiondatefield_l];
-                            debugging("Course " . $course->id . " completion date is " . $completioninfo[$course->id]['completiondate']);
+                            //debugging("Course " . $course->id . " completion date is " . $completioninfo[$course->id]['completiondate']);
                         }
 
                     }
@@ -329,7 +329,7 @@ class enrol_dbself_plugin extends enrol_plugin {
 
                     }
 
-                    debugging('Old grade for courseid ' . $courseid . " and userid " . $user->id . " is " . $currentgrade);
+                    //debugging('Old grade for courseid ' . $courseid . " and userid " . $user->id . " is " . $currentgrade);
                 }
                 else{
                     debugging('Unable to get final exam record for courseid ' . $courseid . " and userid " . $user->id . ". Course completion will be ignored.");
@@ -346,7 +346,7 @@ class enrol_dbself_plugin extends enrol_plugin {
                       grade_update('mod/quiz', $courseid, $gi->itemtype, $gi->itemmodule, $gi->iteminstance, $gi->itemnumber, $grade);
                     }
                     else if (!empty($currentgrade) && $currentgrade >= $cinfo['grade']) {
-                        debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
+                        //debugging("Current grade for final exam for courseid " . $courseid . " and userid " . $user->id . " is larger or equal to the imported grade. Not updating grade.");
                         continue;
                     }
                     else {
