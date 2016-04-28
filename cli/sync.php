@@ -70,16 +70,32 @@ if (!enrol_is_enabled('dbself')) {
 }
 
 if (empty($options['verbose'])) {
-    $trace = new null_progress_trace();
-} else {
-    $trace = new text_progress_trace();
+	$verbose = false;
 }
+else {
+	$verbose = true;
+}
+
+$moodleusers = $DB->get_records('user');
 
 /** @var enrol_database_plugin $enrol  */
 $enrol = enrol_get_plugin('dbself');
 $result = 0;
 
-$result = $result | $enrol->sync_courses($trace);
-$result = $result | $enrol->sync_enrolments($trace);
+echo("Beginning user enrolment syncronization.\n\n");
 
+$totalusers = count($moodleusers);
+$usernum = 1;
+
+foreach ($moodleusers as $user) {
+
+	if ($verbose) {
+		echo($usernum."/".$totalusers."   Syncing user ".$user->email."\n");
+	}
+	$enrol->sync_user_enrolments($user);
+}
+
+echo("Finished syncing user enrolments.\n");
+
+$result=1;
 exit($result);
