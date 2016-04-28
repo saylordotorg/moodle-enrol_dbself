@@ -93,6 +93,8 @@ foreach ($moodleusers as $user) {
 		echo($usernum."/".$totalusers."   Syncing user ".$user->email."\n");
 	}
 	$enrol->sync_user_enrolments($user);
+
+	$usernum = $usernum + 1;
 }
 
 echo("Finished syncing user enrolments.\n");
