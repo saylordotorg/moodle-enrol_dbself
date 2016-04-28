@@ -239,7 +239,10 @@ class enrol_dbself_plugin extends enrol_plugin {
                         $enrols[$course->id][$roleid] = $roleid;
                     }
 
-                    if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
+ 
+        // Enrol user into courses and sync roles.
+        foreach ($roleassigns as $courseid => $roles) {
+            if                   if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
                         $instances[$course->id] = $instance;
                         continue;
                     }
@@ -256,24 +259,34 @@ class enrol_dbself_plugin extends enrol_plugin {
             $extdb->Close();
             return;
         }
-
-        // Enrol user into courses and sync roles.
-        foreach ($roleassigns as $courseid => $roles) {
-            if (!isset($instances[$courseid])) {
+ (!isset($instances[$courseid])) {
                 // Ignored.
                 continue;
             }
-            $instance = $instances[$courseid];          
+            $instance = $instances[$courseid]; 
+
+                    if (isset($completioninfo[$courseid]['completiondate'])) {
+                        $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
+                    }
+                    else {
+                        $completeddatestamp = time(); //If not set, just use the current date.
+                    }
+                    if (isset($completioninfo[$courseid]['enroldate'])) {
+                        $enroldatestamp = strtotime($completioninfo[$courseid]['enroldate']); //Convert the date string to a unix time stamp.
+                    }
+                    else {
+                        $enroldatestamp = $completeddatestamp; //If not set, set the enrolled time to completed time.
+                    }         
 
             if (isset($enrols[$courseid])) {
                 if ($e = $DB->get_record('user_enrolments', array('userid' => $user->id, 'enrolid' => $instance->id))) {
                     // Reenable enrolment when previously disable enrolment refreshed.
                     if ($e->status == ENROL_USER_SUSPENDED) {
-                        $this->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE);
+                        $this->update_user_enrol($instance, $user->id, $enroldatestamp, $completiondatestamp, ENROL_USER_ACTIVE);
                     }
                 } else {
                     $roleid = reset($enrols[$courseid]);
-                    $this->enrol_user($instance, $user->id, $roleid, ENROL_USER_ACTIVE);
+                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, $completiondatestamp, ENROL_USER_ACTIVE);
                 }
             }
 
