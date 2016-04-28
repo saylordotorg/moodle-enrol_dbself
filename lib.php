@@ -238,18 +238,12 @@ class enrol_dbself_plugin extends enrol_plugin {
                     if (empty($fields[$otheruserfieldlower])) {
                         $enrols[$course->id][$roleid] = $roleid;
                     }
-
- 
-        // Enrol user into courses and sync roles.
-        foreach ($roleassigns as $courseid => $roles) {
-            if                   if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
+                    if ($instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'self'), '*', IGNORE_MULTIPLE)) {
                         $instances[$course->id] = $instance;
                         continue;
                     }
-
                     $enrolid = $this->add_instance($course);
                     $instances[$course->id] = $DB->get_record('enrol', array('id'=>$enrolid));
-
                 }
             }
             $rs->Close();
@@ -259,7 +253,9 @@ class enrol_dbself_plugin extends enrol_plugin {
             $extdb->Close();
             return;
         }
- (!isset($instances[$courseid])) {
+        // Enrol user into courses and sync roles.
+        foreach ($roleassigns as $courseid => $roles) {
+            if (!isset($instances[$courseid])) {
                 // Ignored.
                 continue;
             }
@@ -402,51 +398,6 @@ class enrol_dbself_plugin extends enrol_plugin {
             }
         }
 
-        // Unenrol as necessary.
-        $sql = "SELECT e.*, c.visible AS cvisible, ue.status AS ustatus
-                  FROM {enrol} e
-                  JOIN {course} c ON c.id = e.courseid
-                  JOIN {role_assignments} ra ON ra.itemid = e.id
-             LEFT JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                 WHERE ra.userid = :userid AND e.enrol = 'self'";
-        $rs = $DB->get_recordset_sql($sql, array('userid'=>$user->id));
-        foreach ($rs as $instance) {
-            if (!$instance->cvisible and $ignorehidden) {
-                continue;
-            }
-
-            if (!$context = context_course::instance($instance->courseid, IGNORE_MISSING)) {
-                // Very weird.
-                continue;
-            }
-
-            if (!empty($enrols[$instance->courseid])) {
-                // We want this user enrolled.
-                continue;
-            }
-
-            // Deal with enrolments removed from external table
-            if ($unenrolaction == ENROL_EXT_REMOVED_UNENROL) {
-                $this->unenrol_user($instance, $user->id);
-
-            } else if ($unenrolaction == ENROL_EXT_REMOVED_KEEP) {
-                // Keep - only adding enrolments.
-
-            } else if ($unenrolaction == ENROL_EXT_REMOVED_SUSPEND or $unenrolaction == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
-                // Suspend users.
-                if ($instance->ustatus != ENROL_USER_SUSPENDED) {
-                    $this->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
-                }
-                if ($unenrolaction == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
-                    if (!empty($roleassigns[$instance->courseid])) {
-                        // We want this "other user" to keep their roles.
-                        continue;
-                    }
-                    role_unassign_all(array('contextid'=>$context->id, 'userid'=>$user->id, 'component'=>'', 'itemid'=>$instance->id));
-                }
-            }
-        }
-        $rs->close();
     }
 
     /**
