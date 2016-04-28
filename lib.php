@@ -260,29 +260,20 @@ class enrol_dbself_plugin extends enrol_plugin {
                 continue;
             }
             $instance = $instances[$courseid]; 
-
-                    if (isset($completioninfo[$courseid]['completiondate'])) {
-                        $completeddatestamp = strtotime($completioninfo[$courseid]['completiondate']); //Convert the date string to a unix time stamp.
-                    }
-                    else {
-                        $completeddatestamp = time(); //If not set, just use the current date.
-                    }
                     if (isset($completioninfo[$courseid]['enroldate'])) {
                         $enroldatestamp = strtotime($completioninfo[$courseid]['enroldate']); //Convert the date string to a unix time stamp.
                     }
                     else {
-                        $enroldatestamp = $completeddatestamp; //If not set, set the enrolled time to completed time.
+                        $enroldatestamp = 0; //If not set, enrol time is unknown; set to 0.
                     }         
 
             if (isset($enrols[$courseid])) {
                 if ($e = $DB->get_record('user_enrolments', array('userid' => $user->id, 'enrolid' => $instance->id))) {
-                    // Reenable enrolment when previously disable enrolment refreshed.
-                    if ($e->status == ENROL_USER_SUSPENDED) {
-                        $this->update_user_enrol($instance, $user->id, $enroldatestamp, $completeddatestamp, ENROL_USER_ACTIVE);
-                    }
+                    // Update user enrolment date for previous enrolments. Also set to active.
+                    $this->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE, $enroldatestamp, 0);
                 } else {
                     $roleid = reset($enrols[$courseid]);
-                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, $completeddatestamp, ENROL_USER_ACTIVE);
+                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, 0, ENROL_USER_ACTIVE);
                 }
             }
 
