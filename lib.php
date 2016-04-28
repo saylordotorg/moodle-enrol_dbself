@@ -278,11 +278,11 @@ class enrol_dbself_plugin extends enrol_plugin {
                 if ($e = $DB->get_record('user_enrolments', array('userid' => $user->id, 'enrolid' => $instance->id))) {
                     // Reenable enrolment when previously disable enrolment refreshed.
                     if ($e->status == ENROL_USER_SUSPENDED) {
-                        $this->update_user_enrol($instance, $user->id, $enroldatestamp, $completiondatestamp, ENROL_USER_ACTIVE);
+                        $this->update_user_enrol($instance, $user->id, $enroldatestamp, $completeddatestamp, ENROL_USER_ACTIVE);
                     }
                 } else {
                     $roleid = reset($enrols[$courseid]);
-                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, $completiondatestamp, ENROL_USER_ACTIVE);
+                    $this->enrol_user($instance, $user->id, $roleid, $enroldatestamp, $completeddatestamp, ENROL_USER_ACTIVE);
                 }
             }
 
